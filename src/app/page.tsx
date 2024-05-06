@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { IWord, useStore } from "~/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, X, XIcon } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import ConfettiExplosion from "react-confetti-explosion";
 import shuffle from "lodash.shuffle";
@@ -92,11 +92,30 @@ export default function Home() {
   useEffect(() => {
     setWords(() => selectWords());
     setTimeout(() => {
-      toast(
-        "Encontre grupos de 4 palavras que estejam relacionadas a um dos laboratórios. Você tem 4 chances para acertar!\n\nPara mais informações, clique no ícone de ajuda.",
-        { duration: 8000 }
-      );
-    }, 2000);
+      toast.custom((t) => (
+        <div
+          className={`${
+            t.visible ? "animate-enter" : "animate-leave"
+          } max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        >
+          <div className="flex-1 w-0 p-4">
+            <div className="text-sm font-medium text-gray-900">
+              Encontre grupos de 4 palavras que estejam relacionadas a um dos
+              laboratórios. Você tem 4 chances para acertar!\n\nPara mais
+              informações, clique no ícone de ajuda.
+            </div>
+          </div>
+          <div className="flex flex-col justify-center border items-center w-12">
+            <button
+              onClick={() => toast.dismiss()}
+              className="w-full h-full flex justify-center items-center text-gray-400 hover:text-gray-500"
+            >
+              <XIcon className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      ));
+    }, 1000);
   }, []);
 
   useEffect(() => {
@@ -106,12 +125,17 @@ export default function Home() {
     }
   }, [hits, isLoosing]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // remove the selected words from the words array
+    // sort words so that the selected words appear first
+    const unselected = words.filter((w) => !selected.includes(w));
+    setWords([...selected, ...unselected]);
+    // wait for the words to be sorted
+    await new Promise((resolve) => setTimeout(resolve, 600));
     // if all selected words are from the same label, then the user chances
     const labels = selected.map((w) => w.label);
     const isSameLabel = labels.every((label) => label === labels[0]);
     if (isSameLabel) {
-      // remove the selected words from the words array
       setWords(words.filter((w) => !selected.includes(w)));
       // add the selected words to the hits array
       setHits((h) => ({
@@ -120,6 +144,8 @@ export default function Home() {
       }));
     } else {
       setChances((c) => c - 1);
+      setWords(words);
+      await new Promise((resolve) => setTimeout(resolve, 600));
     }
     // unselect all words
     clear();
@@ -189,25 +215,25 @@ export default function Home() {
         <motion.div
           className="grid grid-cols-4 gap-1 m-1"
           layout
-          animate={{ scale: [1, 1.1, 0.9, 1], rotate: [-5, 0, 5, 0] }}
+          animate={{ scale: [1, 1.02, 0.98, 1], rotate: [-1, 0, 1, 0] }}
           transition={{
-            duration: 0.1,
+            duration: 0.3,
             type: "spring",
-            stiffness: 6000,
-            damping: 10,
+            stiffness: 1000,
+            damping: 30,
           }}
           key={wordStateKey}
         >
           <AnimatePresence>
             <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ ease: "easeOut", duration: 2 }}
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ ease: "easeInOut", duration: 2 }}
               className="col-span-4"
             >
               {Object.keys(hits).map((hit) => (
                 <Card
                   className={cn(
-                    "text-center  bg-amber-400 lg:py-4",
+                    "text-center bg-amber-400 lg:py-4",
                     selectColor(hit)
                   )}
                   key={hit}
